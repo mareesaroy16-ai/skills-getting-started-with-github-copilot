@@ -91,12 +91,46 @@ def get_activities():
     return activities
 
 
-@app.post("/activities/{activity_name}/signup")
-def signup_for_activity(activity_name: str, email: str):
-    """Sign up a student for an activity"""
+from pydantic import BaseModel
+
+class RegistrationRequest(BaseModel):
+    activity: str
+    email: str
+
+@app.post("/activities/register")
+async def register_activity(registration: RegistrationRequest):
+    """Register a student for an activity"""
     # Validate activity exists
-    if activity_name not in activities:
+    if registration.activity not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
+    
+    # Check if activity is full
+    if len(activities[registration.activity]["participants"]) >= activities[registration.activity]["max_participants"]:
+        raise HTTPException(status_code=400, detail="Activity is full")
+        
+    # Check if student is already registered
+    if registration.email in activities[registration.activity]["participants"]:
+        raise HTTPException(status_code=400, detail="Already registered for this activity")
+        
+    # Register the student
+    activities[registration.activity]["participants"].append(registration.email)
+    return {"message": "Successfully registered for activity"}
+
+
+@app.post("/activities/{activity}/unregister")
+async def unregister_activity(activity: str, email: str):
+    """Unregister a student from an activity"""
+    # Validate activity exists
+    if activity not in activities:
+        raise HTTPException(status_code=404, detail="Activity not found")
+        
+    # Check if student is registered
+    if email not in activities[activity]["participants"]:
+        raise HTTPException(status_code=400, detail="Not registered for this activity")
+        
+    # Unregister the student
+    activities[activity]["participants"].remove(email)
+    return {"message": "Successfully unregistered from activity"}
 
     # Get the specific activity
     # Ensure additional activities exist (idempotent)
