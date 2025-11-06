@@ -1,0 +1,4 @@
+"""
+This file is required to make Python treat the tests directory as a Python package.
+It allows test discovery to work properly.
+"""
